@@ -1,0 +1,39 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:13
+    environment:
+        # THESE DEFAULTS WILL BE OVERWRITTEN IN PRD DEPLOY
+        POSTGRES_USER: airflow
+        POSTGRES_PASSWORD: airflow
+        POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+     
+  datawarehouse:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: dw_user
+      POSTGRES_PASSWORD: dw_password
+      POSTGRES_DB: dw
+    volumes:
+      - ./db-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - 5432:5432
+    restart: always
+    
+  airflow:
+    build:
+      context: .
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__FERNET_KEY: '46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho='
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 10
+    depends_on:
+      - postgres
+    
+volumes:
+  postgres-db-volume:
